@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "LexicAnalizer.h"
 #include "ErrorModule.h"
+#include "SyntacticAnalizer.h"
 #include <iostream>
 extern "C"             
 __declspec(dllexport)  
@@ -12,7 +13,9 @@ __cdecl
 	Compile(char* code, char *str, int len) {
 	ErrorModule::m_errors.clear();
 	LexicAnalizer parser;
+	SyntacticAnalizer synAnalizer;
 	parser.Parse(code);
+	synAnalizer.Analize(parser);
 	ErrorModule::SaveFile();
 	std::string errorString;
 	for (auto &err : ErrorModule::m_errors)
@@ -25,6 +28,7 @@ __cdecl
 }
 int main()
 {
+
 	//LexicAnalizer parser;
 	//parser.Parse("float 9.c 9.99 jashduh // // usahduhsa&%$###<==>==>*/ >=====>< =9666_nñumeroxDZ24[2259];|| !!!=! != . \n & | + ¿ # ()[]{}(&=!======!!!!!|||||+-+-+*/*/ holaxd.ds xdDDDD24 xd 24.22 ....... 89/*6695&%%%%%%\"hola\"\"\"& | ||+-,.;/*/666.6::;;,,..");
 	//parser.Print();

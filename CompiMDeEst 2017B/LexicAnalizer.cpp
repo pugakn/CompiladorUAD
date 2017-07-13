@@ -42,8 +42,16 @@ void LexicAnalizer::SaveFiles()
 	}
 	file.close();
 }
+std::pair<std::string, LexicAnalizer::ETokenType> LexicAnalizer::GetToken()
+{
+	std::pair<std::string, ETokenType> t = m_tokens[TokenIndex];
+	if (TokenIndex < m_tokens.size() -1)
+		TokenIndex++;
+	return t;
+}
 void LexicAnalizer::Parse(char * code)
 {
+	TokenIndex = 0;
 	m_tokens.clear();
 	tokenString.clear();
 	actualLine = 1;

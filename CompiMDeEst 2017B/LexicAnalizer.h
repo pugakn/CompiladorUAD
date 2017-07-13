@@ -3,6 +3,25 @@
 #include <vector>
 class LexicAnalizer
 {
+public:
+	enum ETokenType
+	{
+		ID,
+		KEYWORD,
+		LOGIC_OP,
+		ASIGN_OP,
+		RELATIONAL_OP,
+		ARITHMETIC_OP,
+		INT,
+		FLOAT,
+		BOOL,
+		GROUP_OP,
+		INDEX_OP,
+		DELIMITER_OP,
+		SEPARATOR_OP,
+		STRING,
+
+	};
 	enum EStates
 	{
 		INITIAL_STATE,
@@ -26,31 +45,13 @@ class LexicAnalizer
 		SEPARATOR_STATE, 
 		COMENT_STATE
 	}; 
-	enum ETokenType
-	{
-		ID,
-		KEYWORD,
-		LOGIC_OP,
-		ASIGN_OP,
-		RELATIONAL_OP,
-		ARITHMETIC_OP,
-		INT,
-		FLOAT,
-		BOOL,
-		GROUP_OP,
-		INDEX_OP,
-		DELIMITER_OP,
-		SEPARATOR_OP,
-		STRING,
-
-	};
 private:
 	const std::string keywords[18]{"var","function","procedure","int","float","string","bool","print","read","main","for","while","switch","break","default","if","else","return"};
 	const std::string typeString[14]{ "ID","KEYWORD","LOGIC_OP","ASIGN_OP","RELATIONAL_OP",
 		"ARITHMETIC_OP","INT","FLOAT","BOOL","GROUP_OP","INDEX_OP","DELIMITER_OP",
 		"SEPARATOR_OP","STRING" };
 	EStates m_state;
-	std::vector<std::pair<std::string,ETokenType>> m_tokens;
+	
 	void StateEnter();
 	void StateExit();
 	void SetState(EStates state);
@@ -61,6 +62,9 @@ private:
 	int actualLine;
 	void SaveFiles();
 public:
+	std::vector<std::pair<std::string, ETokenType>> m_tokens;
+	std::pair<std::string, LexicAnalizer::ETokenType> GetToken();
+	int TokenIndex;
 	void Parse(char* code);
 	void Print();
 	LexicAnalizer();
