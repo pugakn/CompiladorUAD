@@ -7,16 +7,26 @@ using namespace std;
 
 void SyntacticAnalizer::ReadVarDeclRecur()
 {
-	ReadParamSet();
-	 
+	while (true)
+	{
+		actualTok = m_lexicAnalizer->GetToken();
+		if (m_lexicAnalizer->TokenIndex == m_lexicAnalizer->m_tokens.size() - 1)
+			break;
+		if (actualTok.first == "var")
+		{
+			ReadParamSet();
+		}
+		else
+		{
+			m_lexicAnalizer->TokenIndex--;
+			break;
+		}
+		
+	}
 }
 
-void SyntacticAnalizer::ReadFunctionPropCall()
+bool SyntacticAnalizer::ReadFunctionPropCall()
 {
-	//auto tok = m_lexicAnalizer->GetToken();
-	//if (tok.second == LexicAnalizer::ETokenType::ID)
-	//{
-		//actualString += tok.first;
 		actualTok = m_lexicAnalizer->GetToken();
 		if (actualTok.first == "(")
 		{
@@ -30,43 +40,86 @@ void SyntacticAnalizer::ReadFunctionPropCall()
 				if (actualTok.first == ";")
 				{
 					actualString += actualTok.first;
+					return true;
+				}
+				else
+				{
+					PanicMode();
+					ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ;", actualString);
 				}
 			}
+			else
+			{
+				PanicMode();
+				ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba )", actualString);
+			}
 		}
+		else
+		{
+			PanicMode();
+			ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un (", actualString);
+		}
+		return false;
 	//}
 }
 
 void SyntacticAnalizer::ReadParamList()
 {
-	if (m_lexicAnalizer->m_tokens[index].second == LexicAnalizer::ETokenType::ID)
+	actualTok = m_lexicAnalizer->GetToken();
+	if (actualTok.second == LexicAnalizer::ETokenType::ID)
 	{
-		index++;
-		if (m_lexicAnalizer->m_tokens[index].first == ":")
+		actualTok = m_lexicAnalizer->GetToken();
+		if (actualTok.first == ":")
 		{
-			index++;
-			if (m_lexicAnalizer->m_tokens[index].second == LexicAnalizer::ETokenType::KEYWORD)//Type
+			actualTok = m_lexicAnalizer->GetToken();
+			if (actualTok.second == LexicAnalizer::ETokenType::KEYWORD)//Type
 			{
-				index++;
-				if (m_lexicAnalizer->m_tokens[index].first == ",")
+				actualTok = m_lexicAnalizer->GetToken();
+				if (actualTok.first == ",")
 				{
-					index++;
 					ReadParamList();
 				}
 			}
+			else
+			{
+				PanicMode();
+				ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo", actualString);
+			}
+		}
+		else if (actualTok.first == ",")
+		{
+			ReadParamList();
+		}
+		else
+		{
+			PanicMode();
+			ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba :", actualString);
 		}
 	}
-	else if (m_lexicAnalizer->m_tokens[index].first == ",")
+}
+void SyntacticAnalizer::PanicMode()
+{
+	while (true)
 	{
-		index++;
-		ReadParamList();
+		if (actualTok.first == ";"  || actualTok.first == "}" )
+		{
+			break;
+		}
+		actualTok = m_lexicAnalizer->GetToken();
+		if (m_lexicAnalizer->TokenIndex == m_lexicAnalizer->m_tokens.size() - 1)
+			break;
 	}
+
 }
 
 void SyntacticAnalizer::ReadParamSet()
 {
+	//auto resp = m_lexicAnalizer->TokenIndex-1;
+
 	actualTok= m_lexicAnalizer->GetToken();
 	if (actualTok.second == LexicAnalizer::ETokenType::ID)
 	{
+		std::string id = actualTok.first;
 		actualString += actualTok.first;
 		actualTok= m_lexicAnalizer->GetToken();
 		if (actualTok.first == ":")
@@ -75,17 +128,37 @@ void SyntacticAnalizer::ReadParamSet()
 			actualTok= m_lexicAnalizer->GetToken();
 			if (actualTok.second == LexicAnalizer::ETokenType::KEYWORD)//Type
 			{
+				std::string type = actualTok.first;
 				actualString += actualTok.first;
 				actualTok= m_lexicAnalizer->GetToken();
 				if (actualTok.first == ";")
 				{
 					actualString += actualTok.first;
+					if (m_context == "gvar")
+					{
+						SymbolTable::GlobalNode node;
+						node.dimension = 0;
+						node.type = "gvar";
+						node.ptrVal = 0;
+						node.name = id;
+						node.type = type;
+
+						symTable.AddGlobalNode(node);
+					}
 				}
 				else
-					ErrorModule::PushError(Error::LEXIC, 0, "Se esperaba ;", actualString);
+				{
+					ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ;", actualString);
+					//m_lexicAnalizer->TokenIndex = resp;
+					PanicMode();
+				}
 			}
 			else
-				ErrorModule::PushError(Error::LEXIC, 0, "Se esperaba un tipo de variable", actualString);
+			{
+				//m_lexicAnalizer->TokenIndex = resp;
+				PanicMode();
+				ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo de variable", actualString);
+			}
 		}
 		else if (actualTok.first == ",")
 		{
@@ -93,10 +166,18 @@ void SyntacticAnalizer::ReadParamSet()
 			ReadParamSet();
 		}
 		else
-			ErrorModule::PushError(Error::LEXIC, 0, "Se esperaba :", actualString);
+		{
+			//m_lexicAnalizer->TokenIndex = resp;
+			PanicMode();
+			ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba :", actualString);
+		}
 	}
 	else
-		ErrorModule::PushError(Error::LEXIC, 0, "Se esperaba ID", actualString);
+	{
+		//m_lexicAnalizer->TokenIndex = resp;
+		PanicMode();
+		ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ID", actualString);
+	}
 }
 
 void SyntacticAnalizer::ReadPassParamList()
@@ -116,7 +197,8 @@ void SyntacticAnalizer::ReadPassParamList()
 
 void SyntacticAnalizer::ReadAsignation()
 {
-	ReadDimension();
+	//ReadDimension();
+	actualTok = m_lexicAnalizer->GetToken();
 	if (actualTok.first == "=")
 	{
 		actualString += actualTok.first;
@@ -126,12 +208,16 @@ void SyntacticAnalizer::ReadAsignation()
 		{
 			actualString += actualTok.first;
 		}
+		else
+		{
+			PanicMode();
+			ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ;", actualString);
+		}
 	}
 }
 
 void SyntacticAnalizer::ReadDimension()
 {
-	actualTok = m_lexicAnalizer->GetToken();
 	if (actualTok.first == "[")
 	{
 		actualString += actualTok.first;
@@ -146,16 +232,69 @@ void SyntacticAnalizer::ReadDimension()
 				ReadDimension();
 			}
 		}
+		else
+		{
+			PanicMode();
+			ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un indice", actualString);
+		}
 	}
 }
 
 void SyntacticAnalizer::ReadExpr()
 {
 	do {
-		ReadTerm();
-		ReadOper();
+		actualTok = m_lexicAnalizer->GetToken();
+		if (m_lexicAnalizer->TokenIndex < m_lexicAnalizer->m_tokens.size() - 1)
+		{
+			if (m_lexicAnalizer->m_tokens[m_lexicAnalizer->TokenIndex].first == "=")
+			{
+				ReadAsignation();
+			}
+			else if (m_lexicAnalizer->m_tokens[m_lexicAnalizer->TokenIndex].first == "(")
+			{
+				ReadFunctionPropCall();
+			}
+			else if (actualTok.first == "if" || actualTok.first == "while")
+			{
+				ReadStatement();
+			}
+			else
+			{
+				ReadTerm();
+				ReadOper();
+			}
+		}
+		else
+		{
+			ReadTerm();
+			ReadOper();
+		}
+		
 	} while (actualTok.second == LexicAnalizer::ETokenType::ID || actualTok.second == LexicAnalizer::ETokenType::INT || actualTok.first == "(");
 
+}
+
+void SyntacticAnalizer::ReadStatement()
+{
+	actualTok = m_lexicAnalizer->GetToken();
+	if (actualTok.first == "(")
+	{
+		ReadExpr();
+		if (actualTok.first == ")")
+		{
+			ReadBlock();
+		}
+		else
+		{
+			PanicMode();
+			ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un )", actualString);
+		}
+	}
+	else
+	{
+		PanicMode();
+		ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un (", actualString);
+	}
 }
 
 void SyntacticAnalizer::ReadTerm()
@@ -211,56 +350,224 @@ void SyntacticAnalizer::ReadOper()
 	}
 }
 
+void SyntacticAnalizer::ReadFunction()
+{
+	actualTok = m_lexicAnalizer->GetToken();
+	if (actualTok.second == LexicAnalizer::ETokenType::ID) {
+		actualTok = m_lexicAnalizer->GetToken();
+		if (actualTok.first == "(")
+		{
+			ReadParamList();
+			//actualTok = m_lexicAnalizer->GetToken();
+			if (actualTok.first == ")")
+			{
+				actualTok = m_lexicAnalizer->GetToken();
+				if (actualTok.first == ":")
+				{
+					actualTok = m_lexicAnalizer->GetToken();
+					if (actualTok.second == LexicAnalizer::ETokenType::KEYWORD)//Type
+					{
+						actualTok = m_lexicAnalizer->GetToken();
+						ReadFuncBlock();
+					}
+					else
+					{
+						PanicMode();
+						ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo", actualString);
+					}
+				}
+				else
+				{
+					PanicMode();
+					ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba :", actualString);
+				}
+			}
+			else
+			{
+				PanicMode();
+				ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba )", actualString);
+			}
+		}
+		else
+		{
+			PanicMode();
+			ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba (", actualString);
+		}
+	}
+	else
+	{
+		PanicMode();
+		ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ID", actualString);
+	}
+}
+
+void SyntacticAnalizer::ReadProcedure()
+{
+	actualTok = m_lexicAnalizer->GetToken();
+	if (actualTok.second == LexicAnalizer::ETokenType::ID) {
+		actualTok = m_lexicAnalizer->GetToken();
+		if (actualTok.first == "(")
+		{
+			ReadParamList();
+			//actualTok = m_lexicAnalizer->GetToken();
+			if (actualTok.first == ")")
+			{
+				ReadBlock();
+			}
+			else
+			{
+				PanicMode();
+				ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba )", actualString);
+			}
+		}
+		else
+		{
+			PanicMode();
+			ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba (", actualString);
+		}
+	}
+	else
+	{
+		PanicMode();
+		ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ID", actualString);
+	}
+}
+
+void SyntacticAnalizer::ReadBlock()
+{
+	actualTok = m_lexicAnalizer->GetToken();
+	if (actualTok.first == "{")
+	{
+		ReadVarDeclRecur();
+		ReadExprBlock();
+		if (actualTok.first == "}")
+		{
+
+		}
+		//else
+		//	ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba }", actualString);
+	}
+	else
+		ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba {", actualString);
+}
+void SyntacticAnalizer::ReadFuncBlock()
+{
+	actualTok = m_lexicAnalizer->GetToken();
+	if (actualTok.first == "{")
+	{
+		ReadVarDeclRecur();
+		ReadExprBlock();
+		if (actualTok.first == "return")
+		{
+			while (true)
+			{
+				if (m_lexicAnalizer->TokenIndex == m_lexicAnalizer->m_tokens.size() - 1)
+				{
+					ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba }", actualString);
+					break;
+				}
+				actualTok = m_lexicAnalizer->GetToken();
+				if (actualTok.first == "}")
+				{
+					break;
+				}
+			}
+
+		}
+	}
+	else
+		ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba {", actualString);
+}
+
+
+void SyntacticAnalizer::ReadExprBlock()
+{
+	while (true)
+	{
+		actualTok = m_lexicAnalizer->GetToken();
+		if (actualTok.first == "}" || actualTok.first == "return")
+			break;
+		//if (actualTok.second == )
+		//{
+			ReadExpr();
+		//}
+		//else
+		//{
+			//m_lexicAnalizer->TokenIndex--;
+			//break;
+		//}
+		if (m_lexicAnalizer->TokenIndex == m_lexicAnalizer->m_tokens.size() - 1)
+			break;
+	}
+}
+
 void SyntacticAnalizer::SaveFile()
 {
 	ofstream file;
 	file.open("tokens.syn");
-	for (auto &it : m_set)
+	for (auto &it : symTable.m_hashTable)
 	{
-		file  << "\t" << it << endl;
+		file << "\t" << it.second.name << "\t" << it.second.type << "\t" << it.second.varType << "\t" << it.second.dimension << "\t" << "context" << "\t" << it.second.ptrVal;
+		for (auto &it2 : it.second.localNode)
+		{
+			file
+				<< "{" << "\t"
+				<< it2.type << "\t" << it2.varType << "\t" << it2.dimension << "\t" << "context" << "\t" << it2.ptrVal << "\t"
+				<< "}" << "\t";
+		}
+		file << endl;
 	}
 	file.close();
 }
 
 void SyntacticAnalizer::Analize(LexicAnalizer & lexicAnalizer)
 {
-	index = 0;
 	m_lexicAnalizer = &lexicAnalizer;
-	//Leer Vars
-	while (true)
+	m_context = "gvar";
+	if (m_lexicAnalizer->m_tokens.size() != 0)
 	{
-		actualString.clear();
-		actualTok= m_lexicAnalizer->GetToken();
-		if (actualTok.first == "var")
+		//Leer Vars
+		ReadVarDeclRecur();
+		//Leer FuncProcs
+
+		while (true)
 		{
-			actualString += actualTok.first;
-			index++;
-			ReadVarDeclRecur();
-			m_set.push_back(actualString);
-		}
-		else
-			break;
-		if (m_lexicAnalizer->TokenIndex == m_lexicAnalizer->m_tokens.size()-1)
-			break;
-	}
-	//Leer FuncProcs
-	while (true)
-	{
-		actualString.clear();
-		if (m_lexicAnalizer->TokenIndex != m_lexicAnalizer->m_tokens.size() - 1 && actualTok.first != "main")
-		{
-			if (actualTok.second == LexicAnalizer::ETokenType::ID)
+			actualString.clear();
+			actualTok = m_lexicAnalizer->GetToken();
+			if (m_lexicAnalizer->TokenIndex != m_lexicAnalizer->m_tokens.size() - 1 && actualTok.first != "main" && m_lexicAnalizer->m_tokens.size())
 			{
-				actualString += actualTok.first;
-				ReadFunctionPropCall();
-				m_set.push_back(actualString);
+				if (actualTok.first == "function")
+				{
+					actualString += actualTok.first;
+					ReadFunction();
+					m_set.push_back(actualString);
+				}
+				else
+					if (actualTok.first == "procedure")
+					{
+						actualString += actualTok.first;
+						ReadProcedure();
+						m_set.push_back(actualString);
+					}
+			}else
+			if (actualTok.first == "main")
+			{
+				if (actualTok.first == "(")
+				{
+					if (actualTok.first == ")")
+					{
+						ReadBlock();
+					}
+				}
+				break;
+			}
+			else
+			{
+				ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba main", actualString);
+				break;
 			}
 		}
-		else break;
-		actualTok = m_lexicAnalizer->GetToken();
 	}
-
-
 	SaveFile();
 }
 

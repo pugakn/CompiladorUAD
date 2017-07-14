@@ -3,7 +3,7 @@
 #include <fstream>
 using namespace std;
 
-void ErrorModule::PushError(Error::Phase phase, int lineNum, std::string description, std::string line)
+void ErrorModule::PushError(std::string phase, int lineNum, std::string description, std::string line)
 {
 	if (m_errors.size() < 10)
 	{
@@ -34,7 +34,7 @@ ErrorModule::~ErrorModule()
 {
 }
 
-Error::Error(Error::Phase phase,int lineNum, std::string description, std::string line)
+Error::Error(std::string phase,int lineNum, std::string description, std::string line)
 {
 	m_phase = phase;
 	m_line = line;

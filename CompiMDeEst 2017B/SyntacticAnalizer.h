@@ -1,17 +1,19 @@
 #pragma once
 #include "LexicAnalizer.h"
 #include <string>
+#include "SymbolTable.h"
 class SyntacticAnalizer
 {
+	SymbolTable symTable;
 	enum STATE
 	{
 		MAIN_PROG,
 		VAR_DECLARTION,
 
 	};
-
+	std::string m_context;
 	void ReadVarDeclRecur();
-	void ReadFunctionPropCall();
+	bool ReadFunctionPropCall();
 	void ReadParamList();
 	void ReadParamSet();
 	void ReadPassParamList();
@@ -20,6 +22,14 @@ class SyntacticAnalizer
 	void ReadExpr();
 	void ReadTerm();
 	void ReadOper();
+	void ReadFunction();
+	void ReadProcedure();
+	void ReadBlock();
+	void ReadFuncBlock();
+	void ReadExprBlock();
+	void ReadStatement();
+
+	void PanicMode();
 	LexicAnalizer* m_lexicAnalizer;
 	int index;
 	std::pair<std::string, LexicAnalizer::ETokenType> actualTok;

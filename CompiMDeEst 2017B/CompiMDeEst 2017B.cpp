@@ -20,7 +20,7 @@ __cdecl
 	std::string errorString;
 	for (auto &err : ErrorModule::m_errors)
 	{
-		errorString += (err.m_description + "\t"+ std::to_string(err.m_lineNum) + "\t"+err.m_line + "\r" +"\n");
+		errorString += (err.m_phase + "\t" + err.m_description + "\t"+ std::to_string(err.m_lineNum) + "\t"+err.m_line + "\r" +"\n");
 	}
 	strcpy_s(str,len , errorString.c_str());
 	//strcpy_s(str, len, code);

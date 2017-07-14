@@ -33,7 +33,7 @@ namespace WindowsFormsApplication1
         {
             //Abrir
             OpenFileDialog openDialog = new OpenFileDialog();
-            openDialog.Filter = "Text |*.txt";
+            openDialog.Filter = "Text |*";
             openDialog.Title = "Save";
             openDialog.ShowDialog();
             if (openDialog.FileName != "")

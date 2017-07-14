@@ -11,7 +11,7 @@ void LexicAnalizer::StateEnter()
 		tokenString.push_back(*ptr);
 		if (!(*(ptr + 1) >= '0' && *(ptr + 1) <= '9') && m_state == LexicAnalizer::FLOAT_STATE)
 		{
-			ErrorModule::PushError(Error::LEXIC, actualLine, "Se esperaba un numero flotante después del punto" , tokenString);
+			ErrorModule::PushError("<LEXIC>", actualLine, "Se esperaba un numero flotante después del punto" , tokenString);
 			m_state = LexicAnalizer::INITIAL_STATE;
 			tokenString.clear(); 
 		}
@@ -137,13 +137,13 @@ void LexicAnalizer::Parse(char * code)
 				{
 					string temp;
 					temp.push_back(*ptr);
-					ErrorModule::PushError(Error::LEXIC, actualLine, "Se esperaba un numero flotante antes del punto", temp);
+					ErrorModule::PushError("<LEXIC>", actualLine, "Se esperaba un numero flotante antes del punto", temp);
 				}
 				else if(*ptr != ' ' && *ptr != '\t')
 				{
 					string temp;
 					temp.push_back(*ptr);
-					ErrorModule::PushError(Error::LEXIC, actualLine, "Caracter invalido", temp);
+					ErrorModule::PushError("<LEXIC>", actualLine, "Caracter invalido", temp);
 				}
 			}
 			break;
@@ -245,7 +245,7 @@ void LexicAnalizer::Parse(char * code)
 			}
 			else
 			{
-				ErrorModule::PushError(Error::LEXIC,actualLine,"Se esperaba &", tokenString);
+				ErrorModule::PushError("<LEXIC>",actualLine,"Se esperaba &", tokenString);
 				tokenString.clear();
 				m_state = LexicAnalizer::INITIAL_STATE;
 				incrementPtr = false;
@@ -259,7 +259,7 @@ void LexicAnalizer::Parse(char * code)
 			}
 			else
 			{
-				ErrorModule::PushError(Error::LEXIC, actualLine, "Se esperaba |", tokenString);
+				ErrorModule::PushError("<LEXIC>", actualLine, "Se esperaba |", tokenString);
 				tokenString.clear(); 
 				m_state = LexicAnalizer::INITIAL_STATE;
 				incrementPtr = false;
@@ -309,12 +309,12 @@ void LexicAnalizer::Parse(char * code)
 			if (m_state == LexicAnalizer::STRING_STATE)
 			{
 				//Error no se cerro string
-				ErrorModule::PushError(Error::LEXIC, actualLine, "Cadena sin cerrar", tokenString);
+				ErrorModule::PushError("<LEXIC>", actualLine, "Cadena sin cerrar", tokenString);
 			}
 			else if (m_state == LexicAnalizer::COMENT_STATE)
 			{
 				//Error no se cerro comentario
-				ErrorModule::PushError(Error::LEXIC, actualLine, "Comentario sin cerrar", tokenString);
+				ErrorModule::PushError("<LEXIC>", actualLine, "Comentario sin cerrar", tokenString);
 			}
 			SaveFiles();
 			return;
