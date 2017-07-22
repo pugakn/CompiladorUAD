@@ -12,7 +12,7 @@ public:
 		std::string varType;
 		size_t dimension;
 		void* ptrVal;
-		LocalNode* nextNode;
+		//LocalNode* nextNode;
 		LocalNode() {};
 		LocalNode(std::string name, std::string type, std::string varType, size_t dimension, void* ptrVal, LocalNode* nextNode)
 		{
@@ -21,7 +21,7 @@ public:
 			this->varType = varType;
 			this->dimension = dimension;
 			this->ptrVal = ptrVal;
-			this->nextNode = nextNode;
+			//this->nextNode = nextNode;
 		}
 	};
 	struct GlobalNode
@@ -32,7 +32,7 @@ public:
 		size_t dimension;
 		void* ptrVal;
 		std::list<LocalNode> localNode;
-		GlobalNode* nextNode;
+		//GlobalNode* nextNode;
 		GlobalNode() {};
 		GlobalNode(std::string name, std::string type, std::string varType, size_t dimension, void* ptrVal, GlobalNode* nextNode)
 		{
@@ -41,15 +41,15 @@ public:
 			this->varType = varType;
 			this->dimension = dimension;
 			this->ptrVal = ptrVal;
-			this->nextNode = nextNode;
+			//this->nextNode = nextNode;
 		}
 	};
 	void AddGlobalNode(GlobalNode node);
-	void AddLocalNode(std::string name, std::string type, std::string varType, size_t dimension, void* ptrVal);
+	void AddLocalNode(LocalNode node);
 	void Destroy();
 	SymbolTable();
 	~SymbolTable();
-	std::unordered_map<std::string, GlobalNode> m_hashTable;
+	std::unordered_map<std::string, std::vector<GlobalNode>> m_hashTable;
 private:
 	
 };

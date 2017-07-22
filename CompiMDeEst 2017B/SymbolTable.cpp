@@ -5,27 +5,23 @@
 void SymbolTable::AddGlobalNode(GlobalNode node)
 {
 	auto noden = m_hashTable.find(node.name);
-	if ( noden == m_hashTable.end()) { //NOT FOUND
-		m_hashTable[node.name] = node ;
-	}
-	else {
-		//node->second->nextNode = GlobalNode(name, type, varType, dimension, ptrVal,0);
-	}
+	m_hashTable[node.name].push_back( node) ;
+
 }
 
-void SymbolTable::AddLocalNode(std::string name, std::string type, std::string varType, size_t dimension, void * ptrVal)
+void SymbolTable::AddLocalNode(LocalNode node)
 {
-	auto node = m_hashTable.find(name);
-	if (node == m_hashTable.end()) { //NOT FOUND
+	auto nodex = m_hashTable.find(node.name);
+	if (nodex == m_hashTable.end()) { //NOT FOUND
 
-		m_hashTable[name] = GlobalNode("", "", "", 0, 0, 0);
-		m_hashTable[name].localNode.push_back(LocalNode(name, type, varType, dimension, ptrVal,0));
+		m_hashTable[node.name].push_back(GlobalNode(node.name, "", "", 0, 0, 0));
+		m_hashTable[node.name].back().localNode.push_back(node);
 	}
 	else {
 		//auto localNode = &node->second->localNode;
 		//if (node->second->localNode == nullptr)
 		//{
-			node->second.localNode.push_back(LocalNode(name, type, varType, dimension, ptrVal, 0));
+			nodex->second.front().localNode.push_back(LocalNode(node));
 	//	}
 		//else
 		//{

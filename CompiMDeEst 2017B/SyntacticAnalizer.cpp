@@ -65,18 +65,36 @@ bool SyntacticAnalizer::ReadFunctionPropCall()
 
 void SyntacticAnalizer::ReadParamList()
 {
+	static std::vector<std::string> id;
+	std::string type;
 	actualTok = m_lexicAnalizer->GetToken();
 	if (actualTok.second == LexicAnalizer::ETokenType::ID)
 	{
+		id.push_back (actualTok.first);
 		actualTok = m_lexicAnalizer->GetToken();
 		if (actualTok.first == ":")
 		{
 			actualTok = m_lexicAnalizer->GetToken();
 			if (actualTok.second == LexicAnalizer::ETokenType::KEYWORD)//Type
 			{
+				for (auto &it : id)
+				{
+					type = actualTok.first;
+					SymbolTable::LocalNode node;
+					node.dimension = 0;
+					node.type = "param";
+					node.ptrVal = 0;
+					node.name = it;
+					node.varType = type;
+
+					symTable.AddLocalNode(node);
+				}
+				id.clear();
+
 				actualTok = m_lexicAnalizer->GetToken();
 				if (actualTok.first == ",")
 				{
+
 					ReadParamList();
 				}
 			}
@@ -141,9 +159,20 @@ void SyntacticAnalizer::ReadParamSet()
 						node.type = "gvar";
 						node.ptrVal = 0;
 						node.name = id;
-						node.type = type;
+						node.varType = type;
 
 						symTable.AddGlobalNode(node);
+					}
+					else
+					{
+						SymbolTable::LocalNode node;
+						node.dimension = 0;
+						node.type = "lvar";
+						node.ptrVal = 0;
+						node.name = id;
+						node.varType = type;
+
+						symTable.AddLocalNode(node);
 					}
 				}
 				else
@@ -198,9 +227,9 @@ void SyntacticAnalizer::ReadPassParamList()
 void SyntacticAnalizer::ReadAsignation()
 {
 	//ReadDimension();
-	actualTok = m_lexicAnalizer->GetToken();
-	if (actualTok.first == "=")
-	{
+	  actualTok = m_lexicAnalizer->GetToken();
+	//if (actualTok.first == "=")
+	//{
 		actualString += actualTok.first;
 		ReadExpr();
 		actualTok = m_lexicAnalizer->GetToken();
@@ -211,9 +240,9 @@ void SyntacticAnalizer::ReadAsignation()
 		else
 		{
 			PanicMode();
-			ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ;", actualString);
+			ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ; despues de la asignacion", actualString);
 		}
-	}
+	//}
 }
 
 void SyntacticAnalizer::ReadDimension()
@@ -246,11 +275,11 @@ void SyntacticAnalizer::ReadExpr()
 		actualTok = m_lexicAnalizer->GetToken();
 		if (m_lexicAnalizer->TokenIndex < m_lexicAnalizer->m_tokens.size() - 1)
 		{
-			if (m_lexicAnalizer->m_tokens[m_lexicAnalizer->TokenIndex].first == "=")
+			if (actualTok.first == "=")
 			{
 				ReadAsignation();
 			}
-			else if (m_lexicAnalizer->m_tokens[m_lexicAnalizer->TokenIndex].first == "(")
+			else if (actualTok.first == "(")
 			{
 				ReadFunctionPropCall();
 			}
@@ -354,6 +383,7 @@ void SyntacticAnalizer::ReadFunction()
 {
 	actualTok = m_lexicAnalizer->GetToken();
 	if (actualTok.second == LexicAnalizer::ETokenType::ID) {
+		m_context = actualTok.first;
 		actualTok = m_lexicAnalizer->GetToken();
 		if (actualTok.first == "(")
 		{
@@ -367,6 +397,14 @@ void SyntacticAnalizer::ReadFunction()
 					actualTok = m_lexicAnalizer->GetToken();
 					if (actualTok.second == LexicAnalizer::ETokenType::KEYWORD)//Type
 					{
+						SymbolTable::GlobalNode node;
+						node.dimension = 0;
+						node.type = "function";
+						node.ptrVal = 0;
+						node.name = m_context;
+						node.varType = "NULL";
+						symTable.AddGlobalNode(node);
+
 						actualTok = m_lexicAnalizer->GetToken();
 						ReadFuncBlock();
 					}
@@ -405,6 +443,7 @@ void SyntacticAnalizer::ReadProcedure()
 {
 	actualTok = m_lexicAnalizer->GetToken();
 	if (actualTok.second == LexicAnalizer::ETokenType::ID) {
+		m_context = actualTok.first;
 		actualTok = m_lexicAnalizer->GetToken();
 		if (actualTok.first == "(")
 		{
@@ -412,6 +451,13 @@ void SyntacticAnalizer::ReadProcedure()
 			//actualTok = m_lexicAnalizer->GetToken();
 			if (actualTok.first == ")")
 			{
+				SymbolTable::GlobalNode node;
+				node.dimension = 0;
+				node.type = "procedure";
+				node.ptrVal = 0;
+				node.name = m_context;
+				node.varType = "NULL";
+				symTable.AddGlobalNode(node);
 				ReadBlock();
 			}
 			else
@@ -504,17 +550,25 @@ void SyntacticAnalizer::ReadExprBlock()
 void SyntacticAnalizer::SaveFile()
 {
 	ofstream file;
-	file.open("tokens.syn");
+	file.open("table.synb");
 	for (auto &it : symTable.m_hashTable)
 	{
-		file << "\t" << it.second.name << "\t" << it.second.type << "\t" << it.second.varType << "\t" << it.second.dimension << "\t" << "context" << "\t" << it.second.ptrVal;
-		for (auto &it2 : it.second.localNode)
+		for (auto &n : it.second)
 		{
-			file
-				<< "{" << "\t"
-				<< it2.type << "\t" << it2.varType << "\t" << it2.dimension << "\t" << "context" << "\t" << it2.ptrVal << "\t"
-				<< "}" << "\t";
+			file << "{" << "\t";
+			file << "\t" << n.name << "\t," << n.type << "\t," << n.varType << "\t," << n.dimension << "\t," << "GLOBAL" << "\t," << n.ptrVal <<", ";
+			for (auto &it2 : n.localNode)
+			{
+				file
+					<< "{" << "\t"
+					<< it2.type << "\t," << it2.varType << "\t," << it2.dimension << "\t," << m_context << "\t," << it2.ptrVal << "\t"
+					<< "}" << "\t";
+			}
+			file  << "\t";
 		}
+		file << "}" << "\t";
+		
+
 		file << endl;
 	}
 	file.close();
