@@ -137,41 +137,45 @@ void SyntacticAnalizer::PushSymbolTambleErrors()
 	{
 		for (auto &global : it.second)
 		{
-			for (auto &local : global.localNode)
+			for (auto &global2 : it.second)
 			{
-				for (auto &it2 : symTable.m_hashTable)
+				if (&global != &global2)
 				{
-					for (auto &global2 : it2.second)
+					if (global.name == global2.name && global.type == global2.type && global.type != "NULL")
 					{
-						if (&global != &global2)
+						if (global.type == "gvar")
 						{
-							if (global.name == global2.name && global.type == global2.type && global.type != "NULL")
-							{
-								//Error variable global con el mismo nombre
-								ErrorModule::PushError("<SNTACTIC>", 0, "Error variable global con el mismo nombre", global.name);
-								//it.second.erase(1);
-							}
+							//Error variable global con el mismo nombre
+							ErrorModule::PushError("<SNTACTIC>", 0, "Error variable global con el mismo nombre", global.name);
+							//it.second.erase(1);
 						}
-						for (auto &local2 : global2.localNode)
+						else
 						{
-							if (&local != &local2)
+							ErrorModule::PushError("<SNTACTIC>", 0, "Error procedimiento o funcion con el mismo nombre", global.name);
+						}
+					}
+				}
+				for (auto &local : global.localNode)
+				{
+					for (auto &local2 : global2.localNode)
+					{
+						if (&local != &local2)
+						{
+							if (local.name == local2.name && local.context == local2.context)
 							{
-								if (local.name == local2.name && local.context == local2.context)
+								if (local.type == local2.type)
 								{
-									if (local.type == local2.type)
-									{
-										//Error variable local con el mismo nombre dentro del mismo contexto
-										ErrorModule::PushError("<SYNTACTIC>", 0, "variable local con el mismo nombre dentro del mismo contexto", local.name + " en " + local.context);
-										//global.localNode.remove(local);
-										//global2.localNode.remove(local2);
-									}
-									else
-									{
-										//Error variable local con el mismo nombre que un parametro
-										ErrorModule::PushError("<SYNTACTIC>", 0, "variable local con el mismo nombre que un parametro", local.name + " en " + local.context);
-										//global.localNode.remove(local);
-										//global2.localNode.remove(local2);
-									}
+									//Error variable local con el mismo nombre dentro del mismo contexto
+									ErrorModule::PushError("<SYNTACTIC>", 0, "variable local con el mismo nombre dentro del mismo contexto", local.name + " en " + local.context);
+									//global.localNode.remove(local);
+									//global2.localNode.remove(local2);
+								}
+								else
+								{
+									//Error variable local con el mismo nombre que un parametro
+									ErrorModule::PushError("<SYNTACTIC>", 0, "variable local con el mismo nombre que un parametro", local.name + " en " + local.context);
+									//global.localNode.remove(local);
+									//global2.localNode.remove(local2);
 								}
 							}
 						}
