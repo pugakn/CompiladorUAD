@@ -30,6 +30,7 @@ class SyntacticAnalizer
 	void ReadStatement();
 
 	void PanicMode();
+	void PushSymbolTambleErrors();
 	LexicAnalizer* m_lexicAnalizer;
 	int index;
 	std::pair<std::string, LexicAnalizer::ETokenType> actualTok;

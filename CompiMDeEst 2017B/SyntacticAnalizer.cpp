@@ -86,6 +86,7 @@ void SyntacticAnalizer::ReadParamList()
 					node.ptrVal = 0;
 					node.name = it;
 					node.varType = type;
+					node.context = m_context;
 
 					symTable.AddLocalNode(node);
 				}
@@ -130,6 +131,57 @@ void SyntacticAnalizer::PanicMode()
 
 }
 
+void SyntacticAnalizer::PushSymbolTambleErrors()
+{
+	for (auto &it : symTable.m_hashTable)
+	{
+		for (auto &global : it.second)
+		{
+			for (auto &local : global.localNode)
+			{
+				for (auto &it2 : symTable.m_hashTable)
+				{
+					for (auto &global2 : it2.second)
+					{
+						if (&global != &global2)
+						{
+							if (global.name == global2.name && global.type == global2.type && global.type != "NULL")
+							{
+								//Error variable global con el mismo nombre
+								ErrorModule::PushError("<SNTACTIC>", 0, "Error variable global con el mismo nombre", global.name);
+								//it.second.erase(1);
+							}
+						}
+						for (auto &local2 : global2.localNode)
+						{
+							if (&local != &local2)
+							{
+								if (local.name == local2.name && local.context == local2.context)
+								{
+									if (local.type == local2.type)
+									{
+										//Error variable local con el mismo nombre dentro del mismo contexto
+										ErrorModule::PushError("<SYNTACTIC>", 0, "variable local con el mismo nombre dentro del mismo contexto", local.name + " en " + local.context);
+										//global.localNode.remove(local);
+										//global2.localNode.remove(local2);
+									}
+									else
+									{
+										//Error variable local con el mismo nombre que un parametro
+										ErrorModule::PushError("<SYNTACTIC>", 0, "variable local con el mismo nombre que un parametro", local.name + " en " + local.context);
+										//global.localNode.remove(local);
+										//global2.localNode.remove(local2);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 void SyntacticAnalizer::ReadParamSet()
 {
 	//auto resp = m_lexicAnalizer->TokenIndex-1;
@@ -171,6 +223,7 @@ void SyntacticAnalizer::ReadParamSet()
 						node.ptrVal = 0;
 						node.name = id;
 						node.varType = type;
+						node.context = m_context;
 
 						symTable.AddLocalNode(node);
 					}
@@ -561,7 +614,7 @@ void SyntacticAnalizer::SaveFile()
 			{
 				file
 					<< "{" << "\t"
-					<< it2.type << "\t," << it2.varType << "\t," << it2.dimension << "\t," << m_context << "\t," << it2.ptrVal << "\t"
+					<< it2.type << "\t," << it2.varType << "\t," << it2.dimension << "\t," << it2.context << "\t," << it2.ptrVal << "\t"
 					<< "}" << "\t";
 			}
 			file  << "\t";
@@ -623,6 +676,7 @@ void SyntacticAnalizer::Analize(LexicAnalizer & lexicAnalizer)
 		}
 	}
 	SaveFile();
+	PushSymbolTambleErrors();
 }
 
 SyntacticAnalizer::SyntacticAnalizer()

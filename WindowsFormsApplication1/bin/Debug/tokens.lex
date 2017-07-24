@@ -1,7 +1,7 @@
 procedure	KEYWORD
 myproc	ID
 (	GROUP_OP
-x	ID
+a	ID
 ,	SEPARATOR_OP
 y	ID
 :	DELIMITER_OP
@@ -14,7 +14,7 @@ firstvar	ID
 bool	KEYWORD
 ;	DELIMITER_OP
 var	KEYWORD
-z	ID
+d	ID
 :	DELIMITER_OP
 int	KEYWORD
 ;	DELIMITER_OP

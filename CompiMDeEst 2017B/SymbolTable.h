@@ -10,17 +10,19 @@ public:
 		std::string name;
 		std::string type;
 		std::string varType;
+		std::string context;
 		size_t dimension;
 		void* ptrVal;
 		//LocalNode* nextNode;
 		LocalNode() {};
-		LocalNode(std::string name, std::string type, std::string varType, size_t dimension, void* ptrVal, LocalNode* nextNode)
+		LocalNode(std::string name, std::string type, std::string varType, size_t dimension, void* ptrVal, LocalNode* nextNode, std::string context)
 		{
 			this->name = name;
 			this->type = type;
 			this->varType = varType;
 			this->dimension = dimension;
 			this->ptrVal = ptrVal;
+			this->context = context;
 			//this->nextNode = nextNode;
 		}
 	};

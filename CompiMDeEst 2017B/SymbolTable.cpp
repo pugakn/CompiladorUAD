@@ -14,7 +14,7 @@ void SymbolTable::AddLocalNode(LocalNode node)
 	auto nodex = m_hashTable.find(node.name);
 	if (nodex == m_hashTable.end()) { //NOT FOUND
 
-		m_hashTable[node.name].push_back(GlobalNode(node.name, "", "", 0, 0, 0));
+		m_hashTable[node.name].push_back(GlobalNode(node.name, "NULL", "", 0, 0, 0));
 		m_hashTable[node.name].back().localNode.push_back(node);
 	}
 	else {
