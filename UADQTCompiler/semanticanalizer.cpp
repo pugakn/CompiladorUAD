@@ -18,7 +18,9 @@ void SemanticAnalizer::ReadVarDeclRecur()
         }
         else
         {
-            m_lexicAnalizer->TokenIndex--;
+            m_lexicAnalizer->TokenIndex-=2;
+            if (m_lexicAnalizer->TokenIndex < 0)
+                m_lexicAnalizer->TokenIndex = 0;
             break;
         }
     }
@@ -138,6 +140,54 @@ bool SemanticAnalizer::ActualIDExist()
     return false;
 }
 
+bool SemanticAnalizer::IsActualIDIndexOnRange()
+{
+    for (auto &it : m_symbTable->m_hashTable)
+    {
+        for (auto &global : it.second)
+        {
+            if ( global.name == actualID)
+                if (global.dimension > actualIndex)
+                     return true;
+
+            for (auto &local : global.localNode)
+            {
+
+                if (local.name == actualID && local.context == m_context)
+                {
+                    if (local.dimension > actualIndex)
+                        return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool SemanticAnalizer::IsActualIDArray()
+{
+    for (auto &it : m_symbTable->m_hashTable)
+    {
+        for (auto &global : it.second)
+        {
+            if ( global.name == actualID)
+                if (global.dimension > 0)
+                     return true;
+
+            for (auto &local : global.localNode)
+            {
+
+                if (local.name == actualID && local.context == m_context)
+                {
+                    if (local.dimension > 0)
+                        return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 
 void SemanticAnalizer::ReadParamSet()
 {
@@ -231,10 +281,22 @@ void SemanticAnalizer::ReadPassParamList()
 
 void SemanticAnalizer::ReadAsignation()
 {
-    actualString += actualTok.first;
     if (actualType != LexicAnalizer::ETokenType::ID)
     {
         ErrorModule::PushError("<SEMANTIC>",0,"Tipo "+actualID +" no asignable en "+m_context,"");
+        return;
+    }
+    if (IsActualIDArray() == false && actualIsArray == true){
+        ErrorModule::PushError("<SEMANTIC>",0,"Variable "+actualID +"  es un array en "+m_context,"");
+        return;
+    }
+    if (IsActualIDArray() == true && actualIsArray == false){
+        ErrorModule::PushError("<SEMANTIC>",0,"Variable "+actualID +" no es un array en "+m_context,"");
+        return;
+    }
+    if (IsActualIDArray() == true && actualIsArray == true){
+        if (!IsActualIDIndexOnRange())
+            ErrorModule::PushError("<SEMANTIC>",0,"Variable "+actualID +" tiene un indice fuera de rango en "+m_context,"");
         return;
     }
     if (!ActualIDExist()){
@@ -254,6 +316,7 @@ void SemanticAnalizer::ReadDimension()
         {
 
             actualString += actualTok.first;
+            actualIndex = atoi(actualTok.first.c_str());
             actualTok = m_lexicAnalizer->GetToken();
             if (actualTok.first == "]")
             {
@@ -273,6 +336,19 @@ void SemanticAnalizer::ReadDimension()
 
 void SemanticAnalizer::ReadExpr()
 {
+    if (actualTok.second == LexicAnalizer::ETokenType::ID)
+    {
+        actualTok = m_lexicAnalizer->GetToken();
+        if (actualTok.first == "["){
+            actualIsArray = true;
+            ReadDimension();
+        }
+        else
+        {
+            m_lexicAnalizer->TokenIndex-=2;
+            actualTok = m_lexicAnalizer->GetToken();
+        }
+    }
     do {
         actualID = actualTok.first;
         actualType = actualTok.second;
@@ -290,8 +366,10 @@ void SemanticAnalizer::ReadExpr()
                     ReadOper();
                 }
 
-            else if (actualTok.second == LexicAnalizer::ETokenType::ID)
-                        actualID = actualTok.first;
+            else if (actualTok.second == LexicAnalizer::ETokenType::ID){
+                actualIsArray = false;
+                actualID = actualTok.first;
+            }
         }
         else
         {
@@ -302,8 +380,10 @@ void SemanticAnalizer::ReadExpr()
             {
                 ReadOper();
             }
-            else if (actualTok.second == LexicAnalizer::ETokenType::ID)
-                        actualID = actualTok.first;
+            else if (actualTok.second == LexicAnalizer::ETokenType::ID){
+                actualIsArray = false;
+                actualID = actualTok.first;
+            }
         }
 
     } while (actualTok.second == LexicAnalizer::ETokenType::ID || actualTok.second == LexicAnalizer::ETokenType::INT || actualTok.first == "("
@@ -415,6 +495,7 @@ void SemanticAnalizer::ReadTerm()
     else if (actualTok.second == LexicAnalizer::ETokenType::ID)//Dimen && func
     {
         actualID = actualTok.first;
+        actualIsArray = false;
         actualType = actualTok.second;
         actualTok = m_lexicAnalizer->GetToken();
         if (actualTok.first == "(")
@@ -578,6 +659,7 @@ void SemanticAnalizer::ReadFuncBlock()
 
 void SemanticAnalizer::ReadExprBlock()
 {
+    actualTok = m_lexicAnalizer->GetToken();
     while (true)
     {
         actualTok = m_lexicAnalizer->GetToken();

@@ -17,7 +17,9 @@ void SyntacticAnalizer::ReadVarDeclRecur()
         }
         else
         {
-            m_lexicAnalizer->TokenIndex--;
+            m_lexicAnalizer->TokenIndex-=2;
+            if (m_lexicAnalizer->TokenIndex < 0)
+                m_lexicAnalizer->TokenIndex = 0;
             break;
         }
     }
@@ -43,19 +45,19 @@ bool SyntacticAnalizer::ReadFunctionPropCall()
                 else
                 {
                     PanicMode();
-                    ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ;", actualString);
+                    ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ;", m_context);
                 }
             }
             else
             {
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba )", actualString);
+                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba )", m_context);
             }
         }
         else
         {
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un (", actualString);
+            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un (", m_context);
         }
         return false;
     //}
@@ -102,7 +104,7 @@ void SyntacticAnalizer::ReadParamList()
             {
                 id.clear();
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo", actualString);
+                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo", m_context);
             }
         }
         else if (actualTok.first == ",")
@@ -113,7 +115,7 @@ void SyntacticAnalizer::ReadParamList()
         {
             id.clear();
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba :", actualString);
+            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba :", m_context);
         }
     }
 }
@@ -240,7 +242,7 @@ void SyntacticAnalizer::ReadParamSet()
                 }
                 else
                 {
-                    ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ;", actualString);
+                    ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ;", m_context);
                     //m_lexicAnalizer->TokenIndex = resp;
                     PanicMode();
                     varsV.clear();
@@ -250,7 +252,7 @@ void SyntacticAnalizer::ReadParamSet()
             {
                 //m_lexicAnalizer->TokenIndex = resp;
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo de variable", actualString);
+                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo de variable", m_context);
                 varsV.clear();
             }
         }
@@ -270,7 +272,7 @@ void SyntacticAnalizer::ReadParamSet()
         {
             //m_lexicAnalizer->TokenIndex = resp;
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba :", actualString);
+            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba :", m_context);
             varsV.clear();
         }
     }
@@ -316,7 +318,7 @@ void SyntacticAnalizer::ReadParamSet()
             }
             else
             {
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ;", actualString);
+                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ;", m_context);
                 //m_lexicAnalizer->TokenIndex = resp;
                 PanicMode();
                 varsV.clear();
@@ -326,7 +328,7 @@ void SyntacticAnalizer::ReadParamSet()
         {
             //m_lexicAnalizer->TokenIndex = resp;
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo de variable", actualString);
+            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo de variable", m_context);
             varsV.clear();
         }
     }
@@ -334,7 +336,7 @@ void SyntacticAnalizer::ReadParamSet()
     {
         //m_lexicAnalizer->TokenIndex = resp;
         PanicMode();
-        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ID", actualString);
+        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ID", m_context);
         varsV.clear();
     }
 }
@@ -393,19 +395,29 @@ void SyntacticAnalizer::ReadDimension()
             else
             {
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ]", actualString);
+                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ]", m_context);
             }
         }
         else
         {
             PanicMode();
-            ErrorModule::PushError("<SEMANTIC>", 0, "Se esperaba un indice de tipo INT", actualString);
+            ErrorModule::PushError("<SEMANTIC>", 0, "Se esperaba un indice de tipo INT", m_context);
         }
     }
 }
 
 void SyntacticAnalizer::ReadExpr()
 {
+    if (actualTok.second == LexicAnalizer::ETokenType::ID)
+    {
+        if (actualTok.first == "[")
+            ReadDimension();
+        else
+        {
+            m_lexicAnalizer->TokenIndex-=2;
+            actualTok = m_lexicAnalizer->GetToken();
+        }
+    }
     do {
         actualTok = m_lexicAnalizer->GetToken();
         if (m_lexicAnalizer->TokenIndex < m_lexicAnalizer->m_tokens.size() - 1)
@@ -414,14 +426,21 @@ void SyntacticAnalizer::ReadExpr()
             {
                 ReadAsignation();
             }
-            else
+            else if (actualTok.second == LexicAnalizer::ETokenType::ARITHMETIC_OP
+                || actualTok.second == LexicAnalizer::ETokenType::RELATIONAL_OP
+                || actualTok.second == LexicAnalizer::ETokenType::LOGIC_OP)
             {
-                //actualTok = m_lexicAnalizer->GetToken();
-                if (actualTok.second == LexicAnalizer::ETokenType::ARITHMETIC_OP
-                    || actualTok.second == LexicAnalizer::ETokenType::RELATIONAL_OP
-                    || actualTok.second == LexicAnalizer::ETokenType::LOGIC_OP)
+                ReadOper();
+            }
+            else if (actualTok.second == LexicAnalizer::ETokenType::ID)
+            {
+                actualTok = m_lexicAnalizer->GetToken();
+                if (actualTok.first == "[")
+                    ReadDimension();
+                else
                 {
-                    ReadOper();
+                    m_lexicAnalizer->TokenIndex-=2;
+                    actualTok = m_lexicAnalizer->GetToken();
                 }
             }
         }
@@ -433,6 +452,16 @@ void SyntacticAnalizer::ReadExpr()
                 || actualTok.second == LexicAnalizer::ETokenType::LOGIC_OP)
             {
                 ReadOper();
+            }
+            else if (actualTok.second == LexicAnalizer::ETokenType::ID)
+            {
+                if (actualTok.first == "[")
+                    ReadDimension();
+                else
+                {
+                    m_lexicAnalizer->TokenIndex-=2;
+                    actualTok = m_lexicAnalizer->GetToken();
+                }
             }
         }
 
@@ -485,7 +514,7 @@ void SyntacticAnalizer::ReadReturnExpr()
     if (actualTok.first != ";" && actualTok.first != ")")
     {
         PanicMode();
-        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ; después de la expresion de retorno", actualString);
+        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ; después de la expresion de retorno", m_context);
     }else if (actualTok.first == ")")
         actualTok = m_lexicAnalizer->GetToken();
 }
@@ -505,13 +534,13 @@ void SyntacticAnalizer::ReadStatement()
         else
         {
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ) if/while/for", actualString);
+            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ) if/while/for", m_context);
         }
     }
     else
     {
         PanicMode();
-        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un (  if/while/for", actualString);
+        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un (  if/while/for", m_context);
     }
 }
 
@@ -530,7 +559,7 @@ void SyntacticAnalizer::ReadTerm()
         }    else
         {
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ) después del termino", actualString);
+            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ) después del termino", m_context);
         }
     }
 
@@ -562,7 +591,7 @@ void SyntacticAnalizer::ReadTerm()
                     actualString += actualTok.first;
                 }else{
                     PanicMode();
-                     ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ).", actualString);
+                     ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ).", m_context);
                 }
             }
         }
@@ -570,7 +599,7 @@ void SyntacticAnalizer::ReadTerm()
     else
     {
         PanicMode();
-        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un termino", actualString);
+        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un termino", m_context);
     }
 }
 
@@ -622,31 +651,31 @@ void SyntacticAnalizer::ReadFunction()
                     else
                     {
                         PanicMode();
-                        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo de retorno", actualString);
+                        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo de retorno", m_context);
                     }
                 }
                 else
                 {
                     PanicMode();
-                    ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba :", actualString);
+                    ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba :", m_context);
                 }
             }
             else
             {
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ) en la funcion", actualString);
+                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ) en la funcion", m_context);
             }
         }
         else
         {
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ( en la funcion", actualString);
+            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ( en la funcion", m_context);
         }
     }
     else
     {
         PanicMode();
-        ErrorModule::PushError("<SYNTACTIC>", 0, "Token invalido", actualString);
+        ErrorModule::PushError("<SYNTACTIC>", 0, "Token invalido", m_context);
     }
 }
 
@@ -677,19 +706,19 @@ void SyntacticAnalizer::ReadProcedure()
             else
             {
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba )", actualString);
+                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba )", m_context);
             }
         }
         else
         {
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba (", actualString);
+            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba (", m_context);
         }
     }
     else
     {
         PanicMode();
-        ErrorModule::PushError("<SYNTACTIC>", 0, "token invalido", actualString);
+        ErrorModule::PushError("<SYNTACTIC>", 0, "token invalido", m_context);
     }
 }
 
@@ -709,7 +738,7 @@ void SyntacticAnalizer::ReadBlock()
     }
     else{
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba {", actualString);
+            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba {", m_context);
     }
 
 }
@@ -728,20 +757,21 @@ void SyntacticAnalizer::ReadFuncBlock()
             if (actualTok.first != "}")
             {
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba } después del return", actualString);
+                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba } después del return", m_context);
             }
 
         }
     }
     else{
      PanicMode();
-     ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba {", actualString);
+     ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba {", m_context);
     }
 }
 
 
 void SyntacticAnalizer::ReadExprBlock()
 {
+    actualTok = m_lexicAnalizer->GetToken();
     while (true)
     {
         actualTok = m_lexicAnalizer->GetToken();
@@ -850,18 +880,18 @@ void SyntacticAnalizer::Analize(LexicAnalizer & lexicAnalizer)
                     }
                     else{
                      PanicMode();
-                     ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba )", actualString);
+                     ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba )", m_context);
                     }
                 }
                 else{
                      PanicMode();
-                    ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba (", actualString);
+                    ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba (", m_context);
                 }
                 break;
             }
             else
             {
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba main", actualString);
+                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba main", m_context);
                 break;
             }
         }
