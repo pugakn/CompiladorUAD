@@ -1,4 +1,6 @@
-#pragma once
+#ifndef LEXIC_H
+#define LEXIC_H
+
 #include <string>
 #include <vector>
 class LexicAnalizer
@@ -46,10 +48,8 @@ public:
 		COMENT_STATE
 	}; 
 private:
-	const std::string keywords[18]{"var","function","procedure","int","float","string","bool","print","read","main","for","while","switch","break","default","if","else","return"};
-	const std::string typeString[14]{ "ID","KEYWORD","LOGIC_OP","ASIGN_OP","RELATIONAL_OP",
-		"ARITHMETIC_OP","INT","FLOAT","BOOL","GROUP_OP","INDEX_OP","DELIMITER_OP",
-		"SEPARATOR_OP","STRING" };
+    std::vector<std::string> keywords;
+    std::vector<std::string> typeString;
 	EStates m_state;
 	
 	void StateEnter();
@@ -70,4 +70,5 @@ public:
 	LexicAnalizer();
 	~LexicAnalizer();
 };
+#endif
 

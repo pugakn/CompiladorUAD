@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "ErrorModule.h"
 #include <fstream>
 using namespace std;

@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "SymbolTable.h"
 
 
@@ -36,7 +35,7 @@ void SymbolTable::AddLocalNode(LocalNode node)
 
 void SymbolTable::Destroy()
 {
-
+    m_hashTable.clear();
 }
 
 SymbolTable::SymbolTable()

@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "LexicAnalizer.h"
 #include "ErrorModule.h"
 #include <iostream>
@@ -68,7 +67,7 @@ void LexicAnalizer::Parse(char * code)
 				SetState(LexicAnalizer::EStates::INT_STATE);
 			}
 			else if (*ptr >= 'a' && *ptr <= 'z'
-				|| *ptr >= 'A' && *ptr <= '>'
+                || *ptr >= 'A' && *ptr <= 'Z'
 				|| *ptr == '_' || *ptr == 'ñ' || *ptr == 'Ñ') {
 				actualType = ETokenType::ID;
 				SetState(LexicAnalizer::EStates::ID_STATE);
@@ -139,7 +138,7 @@ void LexicAnalizer::Parse(char * code)
 					temp.push_back(*ptr);
 					ErrorModule::PushError("<LEXIC>", actualLine, "Se esperaba un numero flotante antes del punto", temp);
 				}
-				else if(*ptr != ' ' && *ptr != '\t')
+                else if(*ptr != ' ' && *ptr != '\t' && *ptr != 0)
 				{
 					string temp;
 					temp.push_back(*ptr);
@@ -334,6 +333,10 @@ void LexicAnalizer::Print()
 
 LexicAnalizer::LexicAnalizer()
 {
+    keywords = {"var","function","procedure","int","float","string","bool","print","read","main","for","while","switch","break","default","if","else","return"};
+    typeString  = { "ID","KEYWORD","LOGIC_OP","ASIGN_OP","RELATIONAL_OP",
+        "ARITHMETIC_OP","INT","FLOAT","BOOL","GROUP_OP","INDEX_OP","DELIMITER_OP",
+        "SEPARATOR_OP","STRING" };
 }
 
 

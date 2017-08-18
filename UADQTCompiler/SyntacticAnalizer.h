@@ -1,4 +1,3 @@
-#pragma once
 #include "LexicAnalizer.h"
 #include <string>
 #include "SymbolTable.h"
@@ -20,6 +19,7 @@ class SyntacticAnalizer
 	void ReadAsignation();
 	void ReadDimension();
 	void ReadExpr();
+    void ReadReturnExpr();
 	void ReadTerm();
 	void ReadOper();
 	void ReadFunction();
@@ -34,6 +34,9 @@ class SyntacticAnalizer
 	LexicAnalizer* m_lexicAnalizer;
 	int index;
 	std::pair<std::string, LexicAnalizer::ETokenType> actualTok;
+
+    std::vector<std::string> varsV;
+    int actualDim;
 	void SaveFile();
 public:
 	std::vector<std::string> m_set;
