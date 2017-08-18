@@ -28,12 +28,14 @@ SOURCES += main.cpp\
     ErrorModule.cpp \
     LexicAnalizer.cpp \
     SymbolTable.cpp \
-    SyntacticAnalizer.cpp
+    SyntacticAnalizer.cpp \
+    semanticanalizer.cpp
 
 HEADERS  += mainwindow.h \
     ErrorModule.h \
     LexicAnalizer.h \
     SymbolTable.h \
-    SyntacticAnalizer.h
+    SyntacticAnalizer.h \
+    semanticanalizer.h
 
 FORMS    += mainwindow.ui

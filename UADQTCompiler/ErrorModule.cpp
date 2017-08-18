@@ -4,7 +4,7 @@ using namespace std;
 
 void ErrorModule::PushError(std::string phase, int lineNum, std::string description, std::string line)
 {
-	if (m_errors.size() < 10)
+    if (m_errors.size() < 50)
 	{
 		Error error(phase, lineNum, description, line);
 		m_errors.push_back(error);

@@ -12,7 +12,7 @@ struct Error
 class ErrorModule
 {
 private:
-	const size_t MAX_ERRORS = 10;
+    const size_t MAX_ERRORS = 50;
 	//static const std::string phases[1];
 public:
 	static void PushError(std::string phase, int lineNum, std::string description, std::string line);

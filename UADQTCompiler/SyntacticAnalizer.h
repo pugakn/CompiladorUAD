@@ -3,7 +3,7 @@
 #include "SymbolTable.h"
 class SyntacticAnalizer
 {
-	SymbolTable symTable;
+
 	enum STATE
 	{
 		MAIN_PROG,
@@ -33,12 +33,14 @@ class SyntacticAnalizer
 	void PushSymbolTambleErrors();
 	LexicAnalizer* m_lexicAnalizer;
 	int index;
+    bool noTrow = false;
 	std::pair<std::string, LexicAnalizer::ETokenType> actualTok;
 
     std::vector<std::string> varsV;
     int actualDim;
 	void SaveFile();
 public:
+    SymbolTable symTable;
 	std::vector<std::string> m_set;
 	std::string actualString;
 	void Analize(LexicAnalizer& lexicAnalizer);

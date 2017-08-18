@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "LexicAnalizer.h"
 #include "SyntacticAnalizer.h"
+#include "semanticanalizer.h"
 namespace Ui {
 class MainWindow;
 }
@@ -17,6 +18,7 @@ public:
 
     LexicAnalizer parser;
     SyntacticAnalizer synAnalizer;
+    SemanticAnalizer semAnalizer;
 
     ~MainWindow();
 

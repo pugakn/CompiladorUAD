@@ -1,3 +1,6 @@
+#ifndef SYMBTABLE_H
+#define SYMBTABLE_H
+
 #include <string>
 #include <unordered_map>
 #include <memory>
@@ -54,4 +57,5 @@ public:
 private:
 	
 };
+#endif
 

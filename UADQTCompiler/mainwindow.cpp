@@ -21,6 +21,7 @@ void MainWindow::on_actionCompile_triggered()
     ErrorModule::m_errors.clear();
     parser.Parse(const_cast<char*>(ui->plainTextEdit->toPlainText().toStdString().c_str()));
     synAnalizer.Analize(parser);
+    semAnalizer.Analize(&synAnalizer.symTable,&parser);
     ErrorModule::SaveFile();
 
     for (auto &err : ErrorModule::m_errors){
