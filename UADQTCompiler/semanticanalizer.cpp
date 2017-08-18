@@ -1,10 +1,11 @@
-#include "SyntacticAnalizer.h"
+#include "semanticanalizer.h"
+
 #include <iostream>
 #include <fstream>
 #include "ErrorModule.h"
 using namespace std;
 
-void SyntacticAnalizer::ReadVarDeclRecur()
+void SemanticAnalizer::ReadVarDeclRecur()
 {
     while (true)
     {
@@ -23,7 +24,7 @@ void SyntacticAnalizer::ReadVarDeclRecur()
     }
 }
 
-bool SyntacticAnalizer::ReadFunctionPropCall()
+bool SemanticAnalizer::ReadFunctionPropCall()
 {
         actualTok = m_lexicAnalizer->GetToken();
         if (actualTok.first == "(")
@@ -43,25 +44,24 @@ bool SyntacticAnalizer::ReadFunctionPropCall()
                 else
                 {
                     PanicMode();
-                    ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ;", actualString);
                 }
             }
             else
             {
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba )", actualString);
             }
         }
         else
         {
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un (", actualString);
         }
         return false;
     //}
 }
 
-void SyntacticAnalizer::ReadParamList()
+
+
+void SemanticAnalizer::ReadParamList()
 {
     static std::vector<std::string> id;
     std::string type;
@@ -75,21 +75,7 @@ void SyntacticAnalizer::ReadParamList()
             actualTok = m_lexicAnalizer->GetToken();
             if (actualTok.second == LexicAnalizer::ETokenType::KEYWORD)//Type
             {
-                for (auto &it : id)
-                {
-                    type = actualTok.first;
-                    SymbolTable::LocalNode node;
-                    node.dimension = actualDim;
-                    node.type = "param";
-                    node.ptrVal = 0;
-                    node.name = it;
-                    node.varType = type;
-                    node.context = m_context;
 
-                    symTable.AddLocalNode(node);
-                }
-                id.clear();
-                actualDim = 0;
 
                 actualTok = m_lexicAnalizer->GetToken();
                 if (actualTok.first == ",")
@@ -102,7 +88,6 @@ void SyntacticAnalizer::ReadParamList()
             {
                 id.clear();
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo", actualString);
             }
         }
         else if (actualTok.first == ",")
@@ -113,11 +98,10 @@ void SyntacticAnalizer::ReadParamList()
         {
             id.clear();
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba :", actualString);
         }
     }
 }
-void SyntacticAnalizer::PanicMode()
+void SemanticAnalizer::PanicMode()
 {
     while (true)
     {
@@ -132,64 +116,31 @@ void SyntacticAnalizer::PanicMode()
 
 }
 
-void SyntacticAnalizer::PushSymbolTambleErrors()
+bool SemanticAnalizer::ActualIDExist()
 {
-    for (auto &it : symTable.m_hashTable)
+    for (auto &it : m_symbTable->m_hashTable)
     {
         for (auto &global : it.second)
         {
-            for (auto &global2 : it.second)
+            if ( global.name == actualID )
+                return true;
+
+            for (auto &local : global.localNode)
             {
-                if (&global != &global2)
+
+                if (local.name == actualID)
                 {
-                    if (global.name == global2.name && global.type == global2.type && global.type != "NULL")
-                    {
-                        if (global.type == "gvar")
-                        {
-                            //Error variable global con el mismo nombre
-                            ErrorModule::PushError("<SNTACTIC>", 0, "Error variable global con el mismo nombre", global.name);
-                            //it.second.erase(1);
-                        }
-                        else
-                        {
-                            ErrorModule::PushError("<SNTACTIC>", 0, "Error procedimiento o funcion con el mismo nombre", global.name);
-                        }
-                    }
-                }
-                for (auto &local : global.localNode)
-                {
-                    for (auto &local2 : global2.localNode)
-                    {
-                        if (&local != &local2)
-                        {
-                            if (local.name == local2.name && local.context == local2.context)
-                            {
-                                if (local.type == local2.type)
-                                {
-                                    //Error variable local con el mismo nombre dentro del mismo contexto
-                                    ErrorModule::PushError("<SYNTACTIC>", 0, "variable local con el mismo nombre dentro del mismo contexto", local.name + " en " + local.context);
-                                    //global.localNode.remove(local);
-                                    //global2.localNode.remove(local2);
-                                }
-                                else
-                                {
-                                    //Error variable local con el mismo nombre que un parametro
-                                    ErrorModule::PushError("<SYNTACTIC>", 0, "variable local con el mismo nombre que un parametro", local.name + " en " + local.context);
-                                    //global.localNode.remove(local);
-                                    //global2.localNode.remove(local2);
-                                }
-                            }
-                        }
-                    }
+                    return true;
                 }
             }
         }
     }
+    return false;
 }
 
-void SyntacticAnalizer::ReadParamSet()
+
+void SemanticAnalizer::ReadParamSet()
 {
-    //auto resp = m_lexicAnalizer->TokenIndex-1;
 
     actualTok= m_lexicAnalizer->GetToken();
     if (actualTok.second == LexicAnalizer::ETokenType::ID)
@@ -199,79 +150,39 @@ void SyntacticAnalizer::ReadParamSet()
         actualTok= m_lexicAnalizer->GetToken();
         if (actualTok.first == ":")
         {
-            actualString += actualTok.first;
             actualTok= m_lexicAnalizer->GetToken();
             if (actualTok.second == LexicAnalizer::ETokenType::KEYWORD)//Type
             {
                 std::string type = actualTok.first;
-                actualString += actualTok.first;
                 actualTok= m_lexicAnalizer->GetToken();
                 if (actualTok.first == ";")
                 {
-                    actualString += actualTok.first;
-                    varsV.push_back(id);
-                    for (auto &ID : varsV){
-                        if (m_context == "gvar")
-                        {
-                            SymbolTable::GlobalNode node;
-                            node.dimension = actualDim;
-                            node.type = "gvar";
-                            node.ptrVal = 0;
-                            node.name = ID;
-                            node.varType = type;
-
-                            symTable.AddGlobalNode(node);
-                        }
-                        else
-                        {
-                            SymbolTable::LocalNode node;
-                            node.dimension = actualDim;
-                            node.type = "lvar";
-                            node.ptrVal = 0;
-                            node.name = ID;
-                            node.varType = type;
-                            node.context = m_context;
-
-                            symTable.AddLocalNode(node);
-                        }
-                    }
-                  varsV.clear();
-                  actualDim = 0;
                 }
                 else
                 {
-                    ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ;", actualString);
                     //m_lexicAnalizer->TokenIndex = resp;
                     PanicMode();
-                    varsV.clear();
                 }
             }
             else
             {
                 //m_lexicAnalizer->TokenIndex = resp;
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo de variable", actualString);
-                varsV.clear();
             }
         }
         else if (actualTok.first == ",")
         {
-            actualString += actualTok.first;
-            varsV.push_back(id);
             ReadParamSet();
         }
         else if (actualTok.first == "[")
         {
             ReadDimension();
-            varsV.push_back(id);
             ReadParamSet();
         }
         else
         {
             //m_lexicAnalizer->TokenIndex = resp;
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba :", actualString);
-            varsV.clear();
         }
     }
     else if (actualTok.first == ":")
@@ -285,61 +196,25 @@ void SyntacticAnalizer::ReadParamSet()
             actualTok= m_lexicAnalizer->GetToken();
             if (actualTok.first == ";")
             {
-                actualString += actualTok.first;
-                for (auto &ID : varsV){
-                    if (m_context == "gvar")
-                    {
-                        SymbolTable::GlobalNode node;
-                        node.dimension = actualDim;
-                        node.type = "gvar";
-                        node.ptrVal = 0;
-                        node.name = ID;
-                        node.varType = type;
 
-                        symTable.AddGlobalNode(node);
-                    }
-                    else
-                    {
-                        SymbolTable::LocalNode node;
-                        node.dimension = actualDim;
-                        node.type = "lvar";
-                        node.ptrVal = 0;
-                        node.name = ID;
-                        node.varType = type;
-                        node.context = m_context;
-
-                        symTable.AddLocalNode(node);
-                    }
-                }
-              varsV.clear();
-              actualDim = 0;
             }
             else
             {
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ;", actualString);
-                //m_lexicAnalizer->TokenIndex = resp;
                 PanicMode();
-                varsV.clear();
             }
         }
         else
         {
-            //m_lexicAnalizer->TokenIndex = resp;
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo de variable", actualString);
-            varsV.clear();
         }
     }
     else
     {
-        //m_lexicAnalizer->TokenIndex = resp;
         PanicMode();
-        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ID", actualString);
-        varsV.clear();
     }
 }
 
-void SyntacticAnalizer::ReadPassParamList()
+void SemanticAnalizer::ReadPassParamList()
 {
     actualTok= m_lexicAnalizer->GetToken();
     if (actualTok.second == LexicAnalizer::ETokenType::ID)
@@ -354,28 +229,22 @@ void SyntacticAnalizer::ReadPassParamList()
     }
 }
 
-void SyntacticAnalizer::ReadAsignation()
+void SemanticAnalizer::ReadAsignation()
 {
-    //ReadDimension();
-      //actualTok = m_lexicAnalizer->GetToken();
-    //if (actualTok.first == "=")
-    //{
-        actualString += actualTok.first;
-        ReadExpr();
-        //actualTok = m_lexicAnalizer->GetToken();
-//		if (actualTok.first == ";")
-//		{
-//			actualString += actualTok.first;
-//		}
-//		else
-//		{
-//			PanicMode();
-//			ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ; despues de la asignacion", actualString);
-//		}
-    //}
+    actualString += actualTok.first;
+    if (actualType != LexicAnalizer::ETokenType::ID)
+    {
+        ErrorModule::PushError("<SEMANTIC>",0,"Tipo "+actualID +" no asignable en "+m_context,"");
+        return;
+    }
+    if (!ActualIDExist()){
+        ErrorModule::PushError("<SEMANTIC>",0,"Variable "+actualID +" no declarada en "+m_context,"");
+    }
+
+    ReadExpr();
 }
 
-void SyntacticAnalizer::ReadDimension()
+void SemanticAnalizer::ReadDimension()
 {
     if (actualTok.first == "[")
     {
@@ -383,7 +252,7 @@ void SyntacticAnalizer::ReadDimension()
         actualTok = m_lexicAnalizer->GetToken();
         if (actualTok.second == LexicAnalizer::ETokenType::INT)
         {
-            actualDim =  stoi(actualTok.first);
+
             actualString += actualTok.first;
             actualTok = m_lexicAnalizer->GetToken();
             if (actualTok.first == "]")
@@ -393,20 +262,20 @@ void SyntacticAnalizer::ReadDimension()
             else
             {
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ]", actualString);
             }
         }
         else
         {
             PanicMode();
-            ErrorModule::PushError("<SEMANTIC>", 0, "Se esperaba un indice de tipo INT", actualString);
         }
     }
 }
 
-void SyntacticAnalizer::ReadExpr()
+void SemanticAnalizer::ReadExpr()
 {
     do {
+        actualID = actualTok.first;
+        actualType = actualTok.second;
         actualTok = m_lexicAnalizer->GetToken();
         if (m_lexicAnalizer->TokenIndex < m_lexicAnalizer->m_tokens.size() - 1)
         {
@@ -414,16 +283,15 @@ void SyntacticAnalizer::ReadExpr()
             {
                 ReadAsignation();
             }
-            else
-            {
-                //actualTok = m_lexicAnalizer->GetToken();
-                if (actualTok.second == LexicAnalizer::ETokenType::ARITHMETIC_OP
+            else if (actualTok.second == LexicAnalizer::ETokenType::ARITHMETIC_OP
                     || actualTok.second == LexicAnalizer::ETokenType::RELATIONAL_OP
                     || actualTok.second == LexicAnalizer::ETokenType::LOGIC_OP)
                 {
                     ReadOper();
                 }
-            }
+
+            else if (actualTok.second == LexicAnalizer::ETokenType::ID)
+                        actualID = actualTok.first;
         }
         else
         {
@@ -434,6 +302,8 @@ void SyntacticAnalizer::ReadExpr()
             {
                 ReadOper();
             }
+            else if (actualTok.second == LexicAnalizer::ETokenType::ID)
+                        actualID = actualTok.first;
         }
 
     } while (actualTok.second == LexicAnalizer::ETokenType::ID || actualTok.second == LexicAnalizer::ETokenType::INT || actualTok.first == "("
@@ -443,12 +313,11 @@ void SyntacticAnalizer::ReadExpr()
     if (actualTok.first != ";" && actualTok.first != ")")
     {
         PanicMode();
-        //ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ; después de la expresion", actualString);
     }else if (actualTok.first == ")")
         actualTok = m_lexicAnalizer->GetToken();
 }
 
-void SyntacticAnalizer::ReadReturnExpr()
+void SemanticAnalizer::ReadReturnExpr()
 {
     do {
         actualTok = m_lexicAnalizer->GetToken();
@@ -485,12 +354,11 @@ void SyntacticAnalizer::ReadReturnExpr()
     if (actualTok.first != ";" && actualTok.first != ")")
     {
         PanicMode();
-        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ; después de la expresion de retorno", actualString);
     }else if (actualTok.first == ")")
         actualTok = m_lexicAnalizer->GetToken();
 }
 
-void SyntacticAnalizer::ReadStatement()
+void SemanticAnalizer::ReadStatement()
 {
     actualTok = m_lexicAnalizer->GetToken();
     if (actualTok.first == "(")
@@ -505,17 +373,21 @@ void SyntacticAnalizer::ReadStatement()
         else
         {
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ) if/while/for", actualString);
         }
     }
     else
     {
         PanicMode();
-        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un (  if/while/for", actualString);
     }
 }
 
-void SyntacticAnalizer::ReadTerm()
+SemanticAnalizer::SemanticAnalizer()
+{
+
+}
+
+
+void SemanticAnalizer::ReadTerm()
 {
     //actualTok = m_lexicAnalizer->GetToken();
     if (actualTok.first == "(")
@@ -530,7 +402,6 @@ void SyntacticAnalizer::ReadTerm()
         }    else
         {
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ) después del termino", actualString);
         }
     }
 
@@ -543,12 +414,9 @@ void SyntacticAnalizer::ReadTerm()
     }
     else if (actualTok.second == LexicAnalizer::ETokenType::ID)//Dimen && func
     {
-        actualString += actualTok.first;
+        actualID = actualTok.first;
+        actualType = actualTok.second;
         actualTok = m_lexicAnalizer->GetToken();
-//		if (actualTok.first == ")")
-//		{
-//			actualString += actualTok.first;
-//		}
         if (actualTok.first == "(")
         {
             actualString += actualTok.first;
@@ -562,7 +430,6 @@ void SyntacticAnalizer::ReadTerm()
                     actualString += actualTok.first;
                 }else{
                     PanicMode();
-                     ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un ).", actualString);
                 }
             }
         }
@@ -570,11 +437,10 @@ void SyntacticAnalizer::ReadTerm()
     else
     {
         PanicMode();
-        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un termino", actualString);
     }
 }
 
-void SyntacticAnalizer::ReadOper()
+void SemanticAnalizer::ReadOper()
 {
     if (actualTok.second == LexicAnalizer::ETokenType::ARITHMETIC_OP
         || actualTok.second == LexicAnalizer::ETokenType::RELATIONAL_OP
@@ -583,11 +449,10 @@ void SyntacticAnalizer::ReadOper()
         actualString += actualTok.first;
         actualTok = m_lexicAnalizer->GetToken();
         ReadTerm();
-        noTrow = true;
     }
 }
 
-void SyntacticAnalizer::ReadFunction()
+void SemanticAnalizer::ReadFunction()
 {
     actualTok = m_lexicAnalizer->GetToken();
     if (actualTok.second == LexicAnalizer::ETokenType::ID) {
@@ -608,13 +473,6 @@ void SyntacticAnalizer::ReadFunction()
                     actualTok = m_lexicAnalizer->GetToken();
                     if (actualTok.second == LexicAnalizer::ETokenType::KEYWORD)//Type
                     {
-                        SymbolTable::GlobalNode node;
-                        node.dimension = 0;
-                        node.type = "function";
-                        node.ptrVal = 0;
-                        node.name = m_context;
-                        node.varType = "NULL";
-                        symTable.AddGlobalNode(node);
 
                         actualTok = m_lexicAnalizer->GetToken();
                         ReadFuncBlock();
@@ -622,35 +480,30 @@ void SyntacticAnalizer::ReadFunction()
                     else
                     {
                         PanicMode();
-                        ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba un tipo de retorno", actualString);
                     }
                 }
                 else
                 {
                     PanicMode();
-                    ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba :", actualString);
                 }
             }
             else
             {
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ) en la funcion", actualString);
             }
         }
         else
         {
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba ( en la funcion", actualString);
         }
     }
     else
     {
         PanicMode();
-        ErrorModule::PushError("<SYNTACTIC>", 0, "Token invalido", actualString);
     }
 }
 
-void SyntacticAnalizer::ReadProcedure()
+void SemanticAnalizer::ReadProcedure()
 {
     actualTok = m_lexicAnalizer->GetToken();
     if (actualTok.second == LexicAnalizer::ETokenType::ID) {
@@ -665,35 +518,25 @@ void SyntacticAnalizer::ReadProcedure()
             //actualTok = m_lexicAnalizer->GetToken();
             if (actualTok.first == ")")
             {
-                SymbolTable::GlobalNode node;
-                node.dimension = 0;
-                node.type = "procedure";
-                node.ptrVal = 0;
-                node.name = m_context;
-                node.varType = "NULL";
-                symTable.AddGlobalNode(node);
                 ReadBlock();
             }
             else
             {
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba )", actualString);
             }
         }
         else
         {
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba (", actualString);
         }
     }
     else
     {
         PanicMode();
-        ErrorModule::PushError("<SYNTACTIC>", 0, "token invalido", actualString);
     }
 }
 
-void SyntacticAnalizer::ReadBlock()
+void SemanticAnalizer::ReadBlock()
 {
     actualTok = m_lexicAnalizer->GetToken();
     if (actualTok.first == "{")
@@ -704,43 +547,36 @@ void SyntacticAnalizer::ReadBlock()
         {
 
         }
-        //else
-        //	ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba }", actualString);
     }
     else{
             PanicMode();
-            ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba {", actualString);
     }
 
 }
-void SyntacticAnalizer::ReadFuncBlock()
+void SemanticAnalizer::ReadFuncBlock()
 {
-    //actualTok = m_lexicAnalizer->GetToken();
     if (actualTok.first == "{")
     {
         ReadVarDeclRecur();
         ReadExprBlock();
         if (actualTok.first == "return")
         {
-            //actualTok = m_lexicAnalizer->GetToken();
             ReadReturnExpr();
             actualTok = m_lexicAnalizer->GetToken();
             if (actualTok.first != "}")
             {
                 PanicMode();
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba } después del return", actualString);
             }
 
         }
     }
     else{
      PanicMode();
-     ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba {", actualString);
     }
 }
 
 
-void SyntacticAnalizer::ReadExprBlock()
+void SemanticAnalizer::ReadExprBlock()
 {
     while (true)
     {
@@ -759,8 +595,8 @@ void SyntacticAnalizer::ReadExprBlock()
 
             }else if (actualTok.first == "while"){
                 ReadStatement();
-            }
-            ReadExpr();
+            }else
+                ReadExpr();
         //}
         //else
         //{
@@ -772,40 +608,15 @@ void SyntacticAnalizer::ReadExprBlock()
     }
 }
 
-void SyntacticAnalizer::SaveFile()
+
+void SemanticAnalizer::Analize(SymbolTable* symbTable,LexicAnalizer * lexicAnalizer)
 {
-    ofstream file;
-    file.open("table.synb");
-    for (auto &it : symTable.m_hashTable)
-    {
-        for (auto &n : it.second)
-        {
-            file << "{" << "\t";
-            file << "\t" << n.name << "\t," << n.type << "\t," << n.varType << "\t," << n.dimension << "\t," << "GLOBAL" << "\t," << n.ptrVal <<", ";
-            for (auto &it2 : n.localNode)
-            {
-                file
-                    << "{" << "\t"
-                    << it2.type << "\t," << it2.varType << "\t," << it2.dimension << "\t," << it2.context << "\t," << it2.ptrVal << "\t"
-                    << "}" << "\t";
-            }
-            file  << "\t";
-        }
-        file << "}" << "\t";
-
-
-        file << endl;
-    }
-    file.close();
-}
-
-void SyntacticAnalizer::Analize(LexicAnalizer & lexicAnalizer)
-{
-    symTable.Destroy();
     m_set.clear();
-    index = 0;
-    m_lexicAnalizer = &lexicAnalizer;
+    m_lexicAnalizer = lexicAnalizer;
+    m_lexicAnalizer->TokenIndex = 0;
+    m_symbTable = symbTable;
     m_context = "gvar";
+    actualID = "";
     if (m_lexicAnalizer->m_tokens.size() != 0)
     {
         //Leer Vars
@@ -835,7 +646,6 @@ void SyntacticAnalizer::Analize(LexicAnalizer & lexicAnalizer)
                         if (actualTok.second == LexicAnalizer::ETokenType::ID)
                         {
                             PanicMode();
-//                            ErrorModule::PushError("<SYNTACTIC>", 0, "Token invalido", actualString);
                         }
             }else
             if (actualTok.first == "main")
@@ -850,32 +660,19 @@ void SyntacticAnalizer::Analize(LexicAnalizer & lexicAnalizer)
                     }
                     else{
                      PanicMode();
-                     ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba )", actualString);
                     }
                 }
                 else{
                      PanicMode();
-                    ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba (", actualString);
                 }
                 break;
             }
             else
             {
-                ErrorModule::PushError("<SYNTACTIC>", 0, "Se esperaba main", actualString);
                 break;
             }
         }
     }
-    SaveFile();
-    PushSymbolTambleErrors();
-}
-
-SyntacticAnalizer::SyntacticAnalizer()
-{
-   actualDim = 0;
 }
 
 
-SyntacticAnalizer::~SyntacticAnalizer()
-{
-}
